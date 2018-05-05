@@ -54,13 +54,28 @@ SysInitMem:
 malloc: 
 	la $t9, Sys_TheTopOfFree #
 	lw $t8, 0($t9) #Lay dia chi dau tien con trong
+	bne $a2, 4, skip
+	addi $t8,$t8,1
+	andi $t8, $t8, 0xfffffffc
+skip:
 	sw $t8, 0($a0) #Cat dia chi do vao bien con tro
 	addi $v0, $t8, 0 # Dong thoi la ket qua tra ve cua ham
 	mul $t7, $a1,$a2 #Tinh kich thuoc cua mang can cap phat
 	add $t6, $t8, $t7 #Tinh dia chi dau tien con trong
 	sw $t6, 0($t9) #Luu tro lai dia chi dau tien do vao bien Sys_TheTopOfFree
 	jr $ra
+	#------------------------------------------
+	# @param khong co
+	# @return $v0 luong bo nho da duoc cap phat
+	#------------------------------------------
+cal_mem:
+	la $t9, Sys_TheTopOfFree
+	la $t8, Sys_MyFreeSpace
+	sub $v0, $t9, $t8
+	jr $ra
 
+
+Malloc2:
 
 #	Chương trình cho bên dưới là hàm malloc(), kèm theo đó là ví dụ minh họa, được viết bằng hợp ngữ
 #	MIPS, để cấp phát bộ nhớ cho một biến con trỏ nào đó. Hãy đọc chương trình và hiểu rõ nguyên tắc cấp
