@@ -2,38 +2,37 @@
 	CharPtr: .word 0 # Bien con tro, tro toi kieu asciiz
 	BytePtr: .word 0 # Bien con tro, tro toi kieu Byte
 	WordPtr: .word 0 # Bien con tro, tro toi mang kieu Word
+	menu: .asciiz "1.\n"
 .kdata
-	# Bien chua dia chi dau tien cua vung nho con trong
-	Sys_TheTopOfFree: .word 1
-	# Vung khong gian tu do, dung de cap bo nho cho cac bien con tro
-	Sys_MyFreeSpace:
+	Sys_TheTopOfFree: .word 1 # Bien chua dia chi dau tien cua vung nho con trong
+	Sys_MyFreeSpace: # Vung khong gian tu do, dung de cap bo nho cho cac bien con tro
 .text
 	#Khoi tao vung nho cap phat dong
 	jal SysInitMem
-	#-----------------------
-	# Cap phat cho bien con tro, gom 3 phan tu,moi phan tu 1 byte
-	#-----------------------
-	la $a0, CharPtr
-	addi $a1, $zero, 3
-	addi $a2, $zero, 1
-	jal malloc
-	#-----------------------
-	# Cap phat cho bien con tro, gom 6 phan tu, moi phan tu 1 byte
-	#-----------------------
-	la $a0, BytePtr
-	addi $a1, $zero, 6
-	addi $a2, $zero, 1
-	jal malloc
-	#-----------------------
-	# Cap phat cho bien con tro, gom 5 phan tu, moi phan tu 4 byte
-	#-----------------------
-	la $a0, WordPtr
-	addi $a1, $zero, 5
-	addi $a2, $zero, 4
-	jal malloc
-lock: 
-	j lock
-	nop
+print_menu:
+	la $a0,menu
+	la $v0,4
+	syscall
+	li $v0,5
+	syscall
+	addi $at, $zero, 1
+	beq $v0, $at, op1
+	addi $at, $at, 1
+	beq $v0, $at, op2
+	addi $at, $at, 1
+	beq $v0, $at, op3
+	addi $at, $at, 1
+	beq $v0, $at, op4
+	addi $at, $at, 1
+	beq $v0, $at, op5
+	addi $at, $at, 1
+	beq $v0, $at, op6
+	addi $at, $at, 1
+	beq $v0, $at, op7
+	li $v0,10
+	syscall
+op1:
+	
 	#------------------------------------------
 	# Ham khoi tao cho viec cap phat dong
 	# @param khong co
@@ -61,3 +60,22 @@ malloc:
 	add $t6, $t8, $t7 #Tinh dia chi dau tien con trong
 	sw $t6, 0($t9) #Luu tro lai dia chi dau tien do vao bien Sys_TheTopOfFree
 	jr $ra
+
+
+#	Chương trình cho bên dưới là hàm malloc(), kèm theo đó là ví dụ minh họa, được viết bằng hợp ngữ
+#	MIPS, để cấp phát bộ nhớ cho một biến con trỏ nào đó. Hãy đọc chương trình và hiểu rõ nguyên tắc cấp
+#	phát bộ nhớ động.
+#	Trên cơ sở đó, hãy hoàn thiện chương trình như sau. Lưu ý, ngoài viết các hàm đó, cần viết thêm một số
+#	ví dụ minh họa để thấy việc sử dụng hàm đó như thế nào.
+#	1) Việc cấp phát bộ nhớ kiểu word/mảng word có 1 lỗi, đó là chưa bảo đảm qui tắc địa chỉ của kiểu
+#	word phải chia hết cho 4. Hãy khắc phục lỗi này.
+#	2) Viết hàm lấy giá trị Word /Byte của biến con trỏ (tương tự như *CharPtr, *BytePtr, *WordPtr)
+#	3) Viết hàm lấy địa chỉ biến con trỏ (tương tự như &CharPtr, &BytePtr, *WordPtr)
+#	4) Viết hàm thực hiện copy 2 con trỏ xâu kí tự (Xem ví dụ về CharPtr)
+#	5) Viết hàm tính toàn bộ lượng bộ nhớ đã cấp phát cho các biến động
+#	6) Hãy viết hàm Malloc2 để cấp phát cho mảng 2 chiều kiểu .word với tham số vào gồm:
+#	a. Địa chỉ đầu của mảng
+#	b. Số dòng
+#	c. Số cột
+#	7) Tiếp theo câu 6, hãy viết 2 hàm GetArray[i][j] và SetArray[i][j] để lấy/thiết lập giá trị cho phần tử
+#	ở dòng I cột j của mảng.
