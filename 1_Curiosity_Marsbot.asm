@@ -5,11 +5,14 @@
 .eqv HEADING 0xffff8010 # Integer: An angle between 0 and 359
 .eqv MOVING 0xffff8050 # Boolean: whether or not to move
 .eqv LEAVETRACK 0xffff8020 # Boolean (0 or non-0):
-.eqv WHEREX 0xffff8030 # Integer: Current x-location of MarsBot
-.eqv WHEREY 0xffff8040 
+.eqv MASK_CAUSE_KEYMATRIX 0x00000800
+
 .macro  push($reg) # Push a .word register
 sw      $reg, ($sp)
 addi    $sp, $sp, -4
+.end_macro
+.macro clear($reg)
+xor $reg,$reg,$reg
 .end_macro
 .macro  pop($reg) # Pop a .word register
 addi    $sp, $sp, 4
@@ -23,7 +26,8 @@ lw      $reg, ($sp)
 		s_dad: .asciiz "dad\n"
 		s_cbc: .asciiz "cbc\n"
 		s_999: .asciiz "999\n"
-
+		step: .word 0
+		log: 
 .text
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # MAIN Procedure
@@ -38,14 +42,18 @@ main:
 	sb    $t3,   0($t1)
 	li $s0, KEY_CODE
 	li $s1, KEY_READY
+
 Loop:   
-	sw $0, 0($s0)
+
+	nop
 WaitForKey:
 	lw $t1, 0($s1) # $t1 = [$s1] = KEY_READY
 	beq $t1, $zero, WaitForKey # if $t1 == 0 then Polling
 	lw $t0, 0($s0) # $t0 = [$s0] = KEY_CODE
+	sw $0, 0($s0)
+	sw $0, 0($s1)
 	beq $t0, 0xa, enter
-	beq $t0, 0x7f, delete
+	beq $t0, 0x7f, delete	
 	j Loop
 enter:
 	beq $k1,0x1b4, do_1b4
@@ -56,8 +64,19 @@ enter:
 	beq $k1,0xcbc, do_cbc
 	beq $k1,0x999, do_999
 	j delete
+	nop
 do_1b4:
 	jal GO
+	li $t1, HEADING # save HEADING port
+	lw $t1, 0($t1)
+	addi $t1,$t1,180
+	rem $t1,$t1,360
+	la $t2,step
+	lw $t2,0($t2)
+	la $t3,log
+	add $t2,$t2,$t3
+	sw $t1, 0($t2)
+	jal time
 	la $a0,s_1b4
 	j printing
 do_c68:
@@ -83,7 +102,7 @@ do_cbc:
 	la $a0,s_cbc
 	j printing
 do_999:
-	##------------------------------------
+	jal RETURN
 	la $a0,s_999
 	j printing
 printing:
@@ -94,6 +113,7 @@ delete:
 	li $k1,0
 	nop
 	b       Loop           
+	nop
 end_main:
 
 #-----------------------------------------------------------
@@ -101,17 +121,35 @@ end_main:
 # param[in] none
 #-----------------------------------------------------------
 GO: 
-	li $at, MOVING # change MOVING port
-	addi $k0, $zero,1 # to logic 1,
-	sb $k0, 0($at) # to start running
+	li $t1, MOVING # change MOVING port
+	lb $at,0($t1)
+	bne $at, $0, go_end
+	addi $at, $zero,1 # to logic 1,
+	sb $at, 0($t1) # to start running
+go_end:
 	jr $ra
 #-----------------------------------------------------------
 # STOP procedure, to stop running
 # param[in] none
 #-----------------------------------------------------------
 STOP: 
-	li $at, MOVING # change MOVING port to 0
-	sb $zero, 0($at) # to stop
+	push($ra)
+	li $t1, MOVING # change MOVING port to 0
+	lb $at,0($t1)
+	beq $at, $0, stop_end
+	sb $zero, 0($t1) # to stop
+
+	la $t2,step #t2 =*step
+	lw $t4,0($t2)
+	la $t3,log
+	add $t3,$t4,$t3 #t3 = *log[i]
+
+	jal time
+	sw $v0, 4($t3) #log[i].time=time()
+	addi $t4, $t4, 8
+	sw $t4,0($t2) # *step+=8
+stop_end:
+	pop($ra)
 	jr $ra
 #-----------------------------------------------------------
 # TRACK procedure, to start drawing line
@@ -119,8 +157,8 @@ STOP:
 #-----------------------------------------------------------
 TRACK:
 	li $at, LEAVETRACK # change LEAVETRACK port
-	addi $k0, $zero,1 # to logic 1,
-	sb $k0, 0($at) # to start tracking
+	addi $t1, $zero,1 # to logic 1,
+	sb $t1, 0($at) # to start tracking
 	jr $ra
 #-----------------------------------------------------------
 # UNTRACK procedure, to stop drawing line
@@ -139,14 +177,83 @@ UNTRACK:
 # 270: West (left)
 #-----------------------------------------------------------
 ROTATE: 
+	push($ra)
 	li $t0, HEADING # change HEADING port
 	lw $t1, 0($t0)
 	add $t1,$a0,$t1
+	add $t1,$t1,360
 	rem $t1,$t1,360
 	sw $t1, 0($t0) # to rotate robot
+
+	li $at, MOVING
+	lb $t1,0($at)
+	beqz $t1,rot_end
+	la $t2,step #t2 =*step
+	lw $t4,0($t2)
+	la $t3,log
+	add $t3,$t4,$t3 #t3 log[i]
+	jal time
+	sw $v0, 4($t3) #log[i].time=time()
+	addi $t4, $t4, 8
+	sw $t4,0($t2)
+
+	lw $t1, 0($t0)
+	addi $t1,$t1,180
+	rem $t1,$t1,360
+	sw $t1, 8($t3)
+	pop($ra)
+rot_end:
 	jr $ra
 
+	nop
+ROTATE2: 
+	push($t0)
+	li $t0, HEADING # change HEADING port
+	sw $a0, 0($t0) # to rotate robot
+	pop($t0)
+	jr $ra
 
+sleep: 
+
+	addi $v0,$zero,32 
+	syscall
+	nop
+	jr $ra
+time:
+	li $v0,30
+	syscall
+#	bgtu $a0,$v0,time1
+	subu $v0,$a0,$k0
+	move $k0,$a0
+	jr $ra
+	#--------------------------------------------------------
+	
+	#--------------------------------------------------------
+RETURN:
+	push($ra)
+	jal UNTRACK
+	jal STOP
+	la $t0,step 
+	lw $t0,0($t0)
+	beqz $t0,end_ret
+	la $t9,log
+	add $t8,$t0,$t9
+ret_loop:
+	addi $t8,$t8,-8
+	lw $a0,0($t8)
+	jal ROTATE2
+	jal GO
+	lw $a0,4($t8)
+	jal sleep
+
+	ble $t9,$t8,ret_loop
+end_ret:
+	li $at, MOVING # change MOVING port to 0
+	sb $zero, 0($at) # to stop
+	la $t0,step
+	sw $0,0($t0)
+	pop($ra)
+	jr $ra
 
 	#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	# GENERAL INTERRUPT SERVED ROUTINE for all interrupts
@@ -163,6 +270,11 @@ IntSR:
 	push($t3)
 	push($a0)
 	push($a1)
+	mfc0 $t1, $13
+	li $t3, MASK_CAUSE_KEYMATRIX # if Cause value confirm Key..
+	and $at, $t1,$t3
+	bne $at,$t3, next_pc
+
 	li $t0, IN_ADRESS_HEXA_KEYBOARD
 	li $t1, OUT_ADRESS_HEXA_KEYBOARD
 	li $t3, 0x88 # check row 4 and re-enable bit 7
