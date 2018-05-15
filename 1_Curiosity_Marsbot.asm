@@ -222,7 +222,7 @@ sleep:
 time:
 	li $v0,30
 	syscall
-	bgtu $k0,$v0,time1
+	bgtu $k0,$0,time1
 	subu $v0,$a0,$k0
 	move $k0,$a0
 	jr $ra
