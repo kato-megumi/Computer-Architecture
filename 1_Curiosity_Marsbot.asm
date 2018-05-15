@@ -228,7 +228,7 @@ time:
 	jr $ra
 time1:
 	subu $v0,$a0,$k0
-	subu $v0,$0,$v0
+	subu $v0,$a0,$v0
 	move $k0,$a0
 	jr $ra
 	

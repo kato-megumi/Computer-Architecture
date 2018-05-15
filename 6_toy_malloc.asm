@@ -123,27 +123,21 @@ op5:
 	move $a0,$v0
 	li $v0,34
 	syscall
-	li $a0,','
-	li $v0,11
-	syscall
+	jal print_colon
 
 	li $a0,1
 	jal Val_val
 	move $a0,$v0
 	li $v0,34
 	syscall
-	li $a0,','
-	li $v0,11
-	syscall
+	jal print_colon
 
 	li $a0,2
 	jal Val_val
 	move $a0,$v0
 	li $v0,34
 	syscall
-	li $a0,','
-	li $v0,11
-	syscall
+	jal print_colon
 
 	li $a0,3
 	jal Val_val
@@ -162,27 +156,21 @@ op6:
 	move $a0,$v0
 	li $v0,34
 	syscall
-	li $a0,','
-	li $v0,11
-	syscall
+	jal print_colon
 
 	li $a0,1
 	jal Val_addr
 	move $a0,$v0
 	li $v0,34
 	syscall
-	li $a0,','
-	li $v0,11
-	syscall
+	jal print_colon
 
 	li $a0,2
 	jal Val_addr
 	move $a0,$v0
 	li $v0,34
 	syscall
-	li $a0,','
-	li $v0,11
-	syscall
+	jal print_colon
 
 	li $a0,3
 	jal Val_addr
@@ -262,6 +250,7 @@ IntDialog:
 	li $v0,51
 	syscall 
 	beq $a1,0,doneIn
+	beq $a1,-2,end
 	move $a0,$t9
 	j IntDialog
 doneIn:
@@ -401,7 +390,15 @@ Val_addr:
 	sll $t1, $a0, 2
 	addu $v0, $t0, $t1
 	jr $ra
-
+	#------------------------------------------
+	# ham in dau phay ','
+	# @param khong co
+	#------------------------------------------
+print_colon:
+	li $a0,','
+	li $v0 ,11
+	syscall
+	jr $ra
 
 mal_err:
 	la $a0, mal

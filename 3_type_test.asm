@@ -1,25 +1,14 @@
-.eqv KEY_CODE 0xFFFF0004 # ASCII code from keyboard, 1 byte
-.eqv KEY_READY 0xFFFF0000 # =1 if has a new keycode ?
+.eqv KEY_CODE 0xFFFF0004 # ma ky tu nhap vao
+.eqv KEY_READY 0xFFFF0000 # =1 neu nhap ky tu moi
 .eqv COUNTER 0xFFFF0013 # Time Counter
-.eqv SEVENSEG 0xFFFF0010 #
+.eqv SEVENSEG 0xFFFF0010 # dia chi dk den led
 
-.macro  push($reg) # Push a .word register
-sw      $reg, ($sp)
-addi    $sp, $sp, -4
-.end_macro
-.macro clear($reg)
-xor $reg,$reg,$reg
-.end_macro
-.macro  pop($reg) # Pop a .word register
-addi    $sp, $sp, 4
-lw      $reg, ($sp)
-.end_macro
 .data
 	string: .ascii "cat and dog"
 	end_of_string: .byte 0
 	display: .byte 63, 6, 91, 79, 102, 109, 125, 7, 127, 111
 .text
-main:
+main: 
 	move 	$k0, $zero		# $k0 = 0 (counter)
 	li 		$s0, KEY_CODE
 	li 		$s1, KEY_READY
@@ -32,20 +21,17 @@ main:
 WaitForKey:
 	lw 		$t1, 0($s1) # $t1 = [$s1] = KEY_READY
 	bgt		$k0, $k1, LED	# if $k0 > $k1 then LED
-	ble		$s2, $s3, LED
-	li		$v0, 31		# $v0 = 10
-	li		$a0,50
-	syscall
+	ble		$s2, $s3, LED #s2<=s3 then LED
 	beq		$t1, $zero, WaitForKey # if $t1 == 0 then Polling
 	lw		$t0, 0($s0) # $t0 = [$s0] = KEY_CODE
 	beq		$t0,$0,WaitForKey
 	sw 		$0, 0($s0)
-	sw 		$0, 0($s1)
+	sw 		$0, 0($s1) 
 	lb 		$t1,0($s3)
 	bne		$t0, $t1, wrong	# if $t0 == $t1 then wrong
-	addi	$s4, $s4, 1			# $s4 = $s4 + 1
+	addi		$s4, $s4, 1			# $s4 = $s4 + 1
 wrong:
-	addi	$s3, $s3, 1			# $s3 = $s3 + 1
+	addi		$s3, $s3, 1			# $s3 = $s3 + 1
 	bgt		$s2, $s3, WaitForKey	# if $s2 != $s3 then WaitForKey
 	
 LED:
@@ -57,8 +43,8 @@ LED:
 	lb		$a0, 0($a1)		# 
 	li 		$t0, SEVENSEG
 	sb		$a0, 0($t0)
-	div 	$a0,$s4,10
-	rem		$a0,$a0,10
+	div 		$a0,$s4,10 # chia lay phan nguyen
+	rem		$a0,$a0,10 # chia lay so du
 	la		$a1,display
 	add		$a1, $a1, $a0		# $a1 = $a1 + $a0
 	lb		$a0, 0($a1)		# 
