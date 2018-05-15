@@ -25,7 +25,6 @@
 	bytes: .asciiz " bytes."
 	big: .asciiz "\n input value TOO BIG!!"
 	sErr: .asciiz "\n input value cant be zero"
-	buffer: .space 5
 .kdata
 	Sys_TheTopOfFree: .word 1 # Bien chua dia chi dau tien cua vung nho con trong
 	Sys_MyFreeSpace: # Vung khong gian tu do, dung de cap bo nho cho cac bien con tro
@@ -243,7 +242,7 @@ BoNho:
 	jr $ra
 	#------------------------------------------
 	# Wrapper for syscall 51 (InputDialogInt)
-	# repeat if status value !=0
+	# repeat if status value !=0 or -2(cancel)
 	#------------------------------------------
 IntDialog:
 	move $t9,$a0
@@ -300,16 +299,6 @@ skip:
 	sw $t6, 0($t9) #Luu tro lai dia chi dau tien do vao bien Sys_TheTopOfFree
 	jr $ra
 	#------------------------------------------
-	# Tinh luong bo nho da cap phat
-	# @param khong co
-	# @return $v0 luong bo nho da duoc cap phat
-	#------------------------------------------
-cal_mem:
-	la $t9, Sys_TheTopOfFree
-	la $t8, Sys_MyFreeSpace
-	sub $v0, $t9, $t8
-	jr $ra
-	#------------------------------------------
 	# Ham cap phat bo nho dong cho mang 2 chieu
 	# @param [in/out] $a0 Chua dia chi cua bien con tro can cap phat
 	# Khi ham ket thuc, dia chi vung nho duoc cap phat se luu tru vao bien con tro
@@ -319,7 +308,7 @@ cal_mem:
 	#------------------------------------------
 Malloc2:
 	addiu $sp,$sp,-4
-	sw $ra, 4($sp) #push ra
+	sw $ra, 4($sp) #push $ra
 	bgt $a1,1000,mal_err
 	bgt $a2,1000,mal_err
 	la $s0,row
@@ -329,7 +318,7 @@ Malloc2:
 	li $a2,4
 	jal malloc
 	lw $ra, 4($sp)
-	addiu $sp,$sp,4 #pop ra
+	addiu $sp,$sp,4 #pop $ra
 	jr $ra
 	#------------------------------------------
 	# lay gia tri cua trong mang
